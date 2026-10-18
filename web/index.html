@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="voice-token" content="__VOICE_TOKEN__">
+  <meta name="color-scheme" content="light">
+  <title>语音档案 · 本地微信语音</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath stroke='%23006676' stroke-width='4' stroke-linecap='round' d='M5 13v6M12 5v22M20 9v14M27 14v4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+  <script src="/connection.js" defer></script>
+</head>
+<body>
+  <section class="source-bar" aria-label="微信数据源">
+    <div><strong id="source-label">本机微信数据</strong><span id="source-detail">正在检查连接状态…</span></div>
+    <div class="source-actions"><button class="text-button" id="refresh-source" hidden>刷新聊天数据</button><button class="secondary-button" id="configure-source" aria-expanded="false" aria-controls="source-setup">连接本机微信</button></div>
+  </section>
+  <section class="source-setup" id="source-setup" aria-label="连接本机微信" hidden>
+    <div class="setup-heading"><div><h2>连接本机微信</h2><p>选择聊天数据目录后，一次完成密钥验证和语音索引准备。</p></div><button class="text-button" id="close-setup" aria-label="收起数据源设置">收起</button></div>
+    <form id="source-form">
+      <label class="setup-path" for="source-path">聊天数据保存目录<span>在电脑版微信的设置中查看。支持 xwechat_files、账号目录或 db_storage。</span></label>
+      <div class="path-controls"><input id="source-path" type="text" placeholder="例如 D:\xwechat_files" autocomplete="off" spellcheck="false"><button type="button" class="secondary-button" id="inspect-source">检查目录</button><button type="button" class="text-button" id="detect-source">自动查找</button></div>
+      <div class="detected-locations" id="detected-locations" hidden><label for="source-location">找到多个数据目录，请选择<select id="source-location"></select></label></div>
+      <div class="setup-account"><label for="source-account">微信账号<select id="source-account" disabled><option value="">先检查数据目录</option></select></label><button class="primary-button" id="connect-source" type="submit" disabled>连接并读取语音</button></div>
+      <p id="source-feedback" class="setup-feedback" role="status">先自动查找，或填写完整目录后检查。安装目录和 Backup 备份目录不适用。</p>
+    </form>
+    <div class="connection-progress" id="connection-progress" hidden>
+      <ol class="connection-steps" aria-label="连接步骤"><li data-step="checking">检查目录</li><li data-step="key">验证密钥</li><li data-step="decrypting">准备数据</li><li data-step="indexing">整理语音</li></ol>
+      <progress id="connection-meter" aria-label="数据库准备进度"></progress>
+      <div class="connection-message"><p id="connection-message" role="status"></p><button class="text-button" id="cancel-connection">取消</button></div>
+    </div>
+    <p class="setup-note">已有有效密钥时直接复用。首次获取可能需要按提示从托盘退出并重新登录微信；不会自动关闭微信。数据与密钥仅保存在这台电脑，密钥不会显示在网页中。</p>
+  </section>
+  <div class="workspace" id="workspace">
+    <aside class="sidebar" aria-label="群聊和联系人">
+      <header class="sidebar-header">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><h1>语音档案</h1><p>把声音，按对话收好。</p></div></div>
+        <button class="text-button mobile-only" id="back-to-voices">返回语音列表 →</button>
+      </header>
+      <div class="chat-controls">
+        <label class="sr-only" for="chat-search">搜索群聊或联系人</label>
+        <input type="search" id="chat-search" placeholder="搜索群聊或联系人" autocomplete="off">
+        <div class="segments" aria-label="会话类型">
+          <button class="segment active" data-kind="all" aria-pressed="true">全部</button>
+          <button class="segment" data-kind="group" aria-pressed="false">群聊</button>
+          <button class="segment" data-kind="contact" aria-pressed="false">联系人</button>
+        </div>
+      </div>
+      <div class="chat-list" id="chat-list" aria-label="会话列表"><p class="loading-copy">正在读取本地语音索引…</p></div>
+      <footer class="sidebar-footer"><span class="local-dot" aria-hidden="true"></span><div><strong>仅在这台电脑上处理</strong><p id="library-summary">正在整理会话…</p></div></footer>
+    </aside>
+
+    <main class="main-panel">
+      <header class="conversation-header">
+        <button class="text-button mobile-only" id="show-chats">← 会话</button>
+        <div class="conversation-heading"><p class="breadcrumb" id="chat-kind">本地微信语音</p><h2 id="chat-title">正在打开语音档案</h2><p class="conversation-description" id="chat-description">读取会话、发送人和时间。</p></div>
+        <div class="export-actions"><button class="secondary-button" id="mobile-package-button" disabled>生成手机数据包</button><button class="primary-button" id="export-button" disabled>导出当前结果</button></div>
+      </header>
+
+      <form class="filter-bar" id="filter-form">
+        <label class="filter-field sender-field" id="sender-field">发送人<select id="sender-select"><option value="">全部发送人</option></select></label>
+        <label class="filter-field">开始日期<input id="date-since" type="date"></label>
+        <label class="filter-field">结束日期<input id="date-until" type="date"></label>
+        <label class="filter-field sort-field">时间顺序<select id="sort-select"><option value="desc">从新到旧</option><option value="asc">从旧到新</option></select></label>
+        <button class="text-button reset-button" id="reset-filters" type="button">清除筛选</button>
+      </form>
+
+      <section class="export-status" id="export-status" aria-label="导出进度" hidden>
+        <div class="export-status-heading"><strong id="export-status-title">正在导出</strong><div><button class="text-button" id="cancel-export">取消</button><button class="text-button" id="open-folder" hidden>打开文件夹 ↗</button><button class="text-button" id="dismiss-export" hidden>收起</button></div></div>
+        <progress id="export-progress" max="100" value="0"></progress>
+        <p id="export-status-detail" aria-live="polite"></p>
+      </section>
+
+      <div class="results-heading"><p id="result-count" aria-live="polite">正在载入…</p><span>原始语音 · MP3 试听 / 下载</span></div>
+      <div class="voice-list" id="voice-list" aria-label="按时间排列的语音"><div class="list-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div></div>
+      <nav class="pagination" aria-label="语音分页"><span id="page-info"></span><div><button class="secondary-button" id="previous-page" disabled>上一页</button><button class="secondary-button" id="next-page" disabled>下一页</button></div></nav>
+      <p class="notice" id="notice" role="status" hidden></p>
+    </main>
+  </div>
+
+  <footer class="player" id="player" aria-label="当前语音播放器" hidden>
+    <div class="now-playing"><span class="playing-symbol" aria-hidden="true">♪</span><div><strong id="player-title"></strong><p id="player-detail"></p></div></div>
+    <audio id="audio" controls preload="metadata"></audio>
+    <button class="text-button" id="close-player" aria-label="关闭播放器">关闭</button>
+  </footer>
+</body>
+</html>

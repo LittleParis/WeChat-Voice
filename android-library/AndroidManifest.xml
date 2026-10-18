@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="cn.voicekeep.library" android:versionCode="2" android:versionName="0.2.0">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
+    <application android:label="语音档案" android:theme="@style/AppTheme" android:allowBackup="false" android:debuggable="true" android:icon="@drawable/app_icon" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <provider android:name=".AudioProvider" android:authorities="cn.voicekeep.library.audio" android:exported="false" android:grantUriPermissions="true" />
+    </application>
+</manifest>

@@ -1,0 +1,8 @@
+# Runtime: Python 3.10+, Windows, completely local processing.
+frida==17.2.17
+pycryptodome==4.0.1
+pilk==0.2.4
+lameenc==1.9.0
+# Independent audio validation and synthetic regression tests.
+miniaudio==1.71
+pytest==9.1.1
