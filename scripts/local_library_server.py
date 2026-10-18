@@ -35,6 +35,7 @@ class LibraryServer(ThreadingHTTPServer):
         self.token = secrets.token_hex(32)
         self.instance_id = secrets.token_hex(16)
         self.on_exit = on_exit
+        self.on_activate = None
         self.jobs, self.jobs_lock = {}, threading.RLock()
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="voice-export")
         self.connection = DesktopConnection(project, self.activate_library, settings) if project else None
@@ -202,6 +203,9 @@ class LibraryHandler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 raise ValueError("请求内容无效")
             path = urlparse(self.path).path
+            if path == "/api/activate" and self.server.on_activate:
+                self.server.on_activate()
+                return self.respond({"ok": True})
             if path == "/api/exit" and self.server.on_exit:
                 self.respond({"ok": True})
                 threading.Thread(target=self.server.on_exit, daemon=True).start()

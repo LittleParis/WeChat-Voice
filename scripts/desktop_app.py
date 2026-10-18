@@ -12,7 +12,7 @@ import webbrowser
 
 from runtime_paths import attach_worker_streams, default_data_dir, resources, system_dll_search, WORKERS
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 
 class InstanceLock:
@@ -91,10 +91,12 @@ class DesktopController:
         self.stopping = threading.Event()
         self.stopped = threading.Event()
         self.stop_lock = threading.Lock()
+        self.activate_requested = threading.Event()
 
     def boot(self):
         try:
             self.server = create_server(self.data_dir, self.request_stop)
+            self.server.on_activate = self.activate_requested.set
             self.url = f"http://127.0.0.1:{self.server.server_port}"
             threading.Thread(target=self.server.serve_forever, name="voicekeep-http", daemon=True).start()
             info = {"url": self.url, "instance": self.server.instance_id, "pid": os.getpid(), "version": VERSION}
@@ -127,68 +129,25 @@ class DesktopController:
             self.stopped.set()
 
 
-def run_window(controller, launch_browser):
-    import tkinter as tk
-    from tkinter import messagebox, ttk
-    root = tk.Tk()
-    root.title("语音档案")
-    root.geometry("450x270")
-    root.resizable(False, False)
-    style = ttk.Style(root)
-    style.configure("TLabel", font=("Microsoft YaHei UI", 10))
-    style.configure("Title.TLabel", font=("Microsoft YaHei UI", 18, "bold"))
-    style.configure("TButton", font=("Microsoft YaHei UI", 10), padding=(10, 7))
-    frame = ttk.Frame(root, padding=24)
-    frame.pack(fill="both", expand=True)
-    ttk.Label(frame, text="语音档案", style="Title.TLabel").pack(anchor="w")
-    status = tk.StringVar(value="正在准备本机语音工具…")
-    ttk.Label(frame, textvariable=status, wraplength=400).pack(anchor="w", pady=(12, 6))
-    address = tk.StringVar(value="首次启动需要稍等片刻。")
-    ttk.Label(frame, textvariable=address).pack(anchor="w")
-    buttons = ttk.Frame(frame)
-    buttons.pack(fill="x", pady=(18, 12))
-    open_button = ttk.Button(buttons, text="打开网页", state="disabled", command=lambda: open_browser(controller.url))
-    open_button.pack(side="left")
+def run_window(controller, launch_browser=False):
+    from qt_desktop import run
+    return run(controller)
 
-    def open_exports():
-        folder = controller.data_dir / "exports"
-        folder.mkdir(parents=True, exist_ok=True)
-        with system_dll_search():
-            os.startfile(str(folder))
 
-    ttk.Button(buttons, text="导出文件夹", command=open_exports).pack(side="left", padx=8)
-    ttk.Button(buttons, text="退出程序", command=controller.request_stop).pack(side="right")
-    ttk.Label(frame, text="关闭网页后工具仍在运行；请在这里或网页中退出。", wraplength=400).pack(anchor="w")
-    root.protocol("WM_DELETE_WINDOW", controller.request_stop)
-    announced = False
-
-    def refresh():
-        nonlocal announced
-        if controller.stopped.is_set():
-            root.destroy()
-            return
-        if controller.stopping.is_set():
-            status.set("正在停止处理并退出，请稍候…")
-            open_button.configure(state="disabled")
-        elif controller.booted.is_set() and not announced:
-            announced = True
-            if controller.error:
-                messagebox.showerror("无法启动", "本机工具启动失败，请确认数据目录可写。\n错误类型：" + controller.error, parent=root)
-                controller.request_stop()
-            else:
-                status.set("工具已启动，接下来的操作在网页中完成。")
-                address.set(controller.url)
-                open_button.configure(state="normal")
-                if launch_browser:
-                    try:
-                        open_browser(controller.url)
-                    except OSError:
-                        status.set("请点击“打开网页”，或在浏览器输入下面的地址。")
-        root.after(150, refresh)
-
-    threading.Thread(target=controller.boot, name="voicekeep-start", daemon=True).start()
-    refresh()
-    root.mainloop()
+def activate_existing(url):
+    from http.cookiejar import CookieJar
+    from urllib.request import HTTPCookieProcessor, Request
+    import re
+    try:
+        client = build_opener(ProxyHandler({}), HTTPCookieProcessor(CookieJar()))
+        with client.open(url, timeout=2) as response:
+            page = response.read().decode('utf-8')
+        token = re.search(r'name="voice-token" content="([a-f0-9]+)"', page)[1]
+        request = Request(url + '/api/activate', data=b'{}', headers={'Content-Type': 'application/json', 'X-Voice-Token': token})
+        with client.open(request, timeout=2) as response:
+            return bool(json.load(response).get('ok'))
+    except (OSError, ValueError, TypeError):
+        return False
 
 
 def run_worker(arguments):
@@ -217,10 +176,14 @@ def main(arguments=None):
     parser.add_argument("--headless", action="store_true", help="For automated validation")
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--self-test", type=Path, metavar="REPORT", help="Run synthetic bundled dependency checks")
+    parser.add_argument("--qt-check", type=Path, metavar="REPORT", help="For native UI and multimedia validation")
     args = parser.parse_args(arguments)
     if args.self_test:
         from desktop_selftest import run
         return run(args.self_test)
+    if args.qt_check:
+        from qt_smoke import run
+        return run(args.qt_check, args.data_dir)
     if os.name != "nt":
         return 2
     from desktop_connection import protect_private
@@ -231,8 +194,7 @@ def main(arguments=None):
         for _ in range(15):
             url = existing_url(data_dir)
             if url:
-                if not args.no_browser:
-                    open_browser(url)
+                activate_existing(url)
                 instance.close()
                 return 0
             time.sleep(.2)
@@ -247,8 +209,6 @@ def main(arguments=None):
             controller.boot()
             if controller.error:
                 controller.request_stop()
-            elif not args.no_browser:
-                open_browser(controller.url)
             while not controller.stopped.wait(.2):
                 pass
         else:
@@ -273,7 +233,12 @@ if __name__ == "__main__":
                 index = sys.argv.index("--data-dir")
                 diagnostic = Path(sys.argv[index + 1]) / ".private/startup-error.json"
                 diagnostic.parent.mkdir(parents=True, exist_ok=True)
-                diagnostic.write_text(json.dumps({"error": type(error).__name__}), encoding="utf-8")
+                import traceback
+                site = traceback.extract_tb(error.__traceback__)[-1]
+                details = {"error": type(error).__name__, "at": Path(site.filename).name + ":" + str(site.lineno)}
+                if isinstance(error, ImportError):
+                    details["import_error"] = str(error)
+                diagnostic.write_text(json.dumps(details), encoding="utf-8")
             except Exception:
                 pass
             raise SystemExit(1)

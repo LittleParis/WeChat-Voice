@@ -21,3 +21,9 @@
 - pytest 9.1.1：合成回归测试。
 
 各依赖的授权以其对应版本的许可证文件为准；Windows EXE 携带运行依赖与可取得的许可证文件，源代码入口为上述项目及本仓库，构建工具为 PyInstaller 6.22.3。Android App 使用系统 MediaPlayer 播放电脑端生成的 MP3，不包含此前录制实验或 Java LAME 编码器。
+
+## Qt 原生桌面界面
+
+- PySide6 / Qt for Python 6.10.2，来源：https://pypi.org/project/PySide6/6.10.2/ 。
+- 配套 PySide6_Essentials、PySide6_Addons、Shiboken6 均固定为 6.10.2；分发包保留相应许可证与声明。Qt for Python 使用相应版本所附的 LGPL/GPL 或商业许可条款，见官方项目说明与包内 LICENSES。
+- 窗口使用 Qt Widgets 和 Qt Multimedia，不使用 Qt WebEngine；Windows 中文字体从系统字体目录加载，不随应用再分发系统字体。
