@@ -12,7 +12,7 @@ import webbrowser
 
 from runtime_paths import attach_worker_streams, default_data_dir, resources, system_dll_search, WORKERS
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 
 
 class InstanceLock:

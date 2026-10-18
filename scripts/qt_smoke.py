@@ -22,6 +22,7 @@ def run(report, data_dir):
     report.parent.mkdir(parents=True, exist_ok=True)
     protect_private(data_dir)
     app = QApplication.instance() or QApplication([])
+    app.setStyle("Fusion")
     app.setQuitOnLastWindowClosed(False)
     controller = DesktopController(data_dir)
     controller.boot()
@@ -42,7 +43,7 @@ def run(report, data_dir):
         window = NativeWindow(controller, auto_detect=False)
         window.audio_output.setMuted(True)
         window.show()
-        wait(lambda: window.ready and not window.scanning)
+        wait(lambda: window.ready and not window.scanning and not window.filtering)
         checks["qt_widgets_ready"] = True
         checks["voices"] = len(window.library.records)
         assert window.browse_button.isEnabled()

@@ -22,13 +22,15 @@
 
 ## 推荐：下载 EXE，双击使用
 
-1. 打开 [Windows Qt 0.4.0 试用版下载页](https://github.com/LittleParis/WeChat-Voice/releases/tag/v0.4.0)。
-2. 下载 **VoiceKeep-0.4.0-windows-x64.exe**；Source code ZIP 是开发者源码，不是启动程序。
+1. 打开 [Windows Qt 0.4.1 试用版下载页](https://github.com/LittleParis/WeChat-Voice/releases/tag/v0.4.1)。
+2. 下载 **VoiceKeep-0.4.1-windows-x64.exe**；Source code ZIP 是开发者源码，不是启动程序。
 3. 将 EXE 放到本机文件夹中，双击运行。首次启动需要稍等片刻，随后直接进入原生 Qt 窗口，不需要浏览器。
 4. 在程序中选择微信数据目录与账号，点击“连接并读取语音”。后面的具体操作见下方“首次连接微信”。
 5. 使用结束后，关闭程序窗口。程序会停止自己的后台任务并退出，不会关闭微信。
 
 程序使用 PySide6 / Qt Widgets 原生控件，已内置 Python、Qt 和处理依赖，不需要安装 Python、Qt、Git 或输入启动命令。目录连接、会话、筛选、播放和导出都在同一个窗口内完成。重复双击会唤醒已有窗口。
+
+0.4.1 优化了语音列表、后台筛选和播放反馈：鼠标滚轮有轻量平滑过渡，快速切换筛选只应用最后一次结果。`Ctrl+F` 搜索会话，在语音列表中按空格或回车试听；“更多 → 减少动态效果”可关闭滚动动画。
 
 EXE 连接配置和缓存保存在 **`%LOCALAPPDATA%\VoiceKeep`**，导出结果在其中的 `exports` 文件夹；批量导出完成后点击“打开结果文件夹”即可找到。更新 EXE 会继续使用原来的数据。这里只提供 Windows 64 位试用版，尚未进行 Windows 代码签名。
 
