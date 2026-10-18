@@ -185,4 +185,12 @@
     }
   }
   setup();
+  $("desktop-exit").addEventListener("click", async () => {
+    $("desktop-exit").disabled = true;
+    try {
+      await api("/api/exit", {});
+      clearTimeout(pollTimer);
+      document.body.replaceChildren(element("div", "empty", "语音档案已退出，可以关闭这个网页。"));
+    } catch (error) { notify(error.message, true); $("desktop-exit").disabled = false; }
+  });
 })();

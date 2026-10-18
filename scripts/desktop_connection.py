@@ -14,6 +14,7 @@ import threading
 from capture_desktop_key import authenticate_first_page
 from export_original_voices import SHANGHAI
 from voice_library import VoiceLibrary
+from runtime_paths import resources, system_dll_search, worker_command
 
 
 def source_id(source):
@@ -83,9 +84,11 @@ def discover_sources(saved=None):
 def protect_private(project):
     private = project / ".private"
     if os.name == "nt":
-        result = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-                                 "-File", str(project / "scripts/Protect-PrivateDirectory.ps1"), "-Path", str(private)],
-                                capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        powershell = Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+        with system_dll_search():
+            result = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                                     "-File", str(resources() / "scripts/Protect-PrivateDirectory.ps1"), "-Path", str(private)],
+                                    capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         if result.returncode:
             raise RuntimeError("private_permissions")
     else:
@@ -172,7 +175,7 @@ class DesktopConnection:
 
     def run_child(self, script, arguments):
         self.check_cancelled()
-        command = [sys.executable, "-u", str(self.project / "scripts" / script), *map(str, arguments)]
+        command = worker_command(script, arguments)
         env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
         with self.lock:
             self.check_cancelled()

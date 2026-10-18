@@ -2,7 +2,9 @@
 
 把微信里的原始语音导出成可独立播放的 MP3，并按群聊、联系人、发送人和时间整理。
 
-**第一次使用，建议先在电脑上导出一条语音，确认能播放，再尝试批量导出或手机 App。**
+**普通用户推荐下载 Windows EXE，双击即可打开工具，无需安装 Python、Git 或输入启动命令。**
+
+建议先导出一条语音，确认能播放，再尝试批量导出或手机 App。
 
 ## 先了解使用方式
 
@@ -18,7 +20,26 @@
 
 工具提取的是数据库里的原始语音，不需要逐条播放，也不使用录音。当前提取过程仍然需要电脑；Android App 不能独立读取未 Root 手机的微信私有聊天数据。
 
-## 一、使用前准备
+## 推荐：下载 EXE，双击使用
+
+1. 打开 [Windows 0.3.0 试用版下载页](https://github.com/LittleParis/WeChat-Voice/releases/tag/v0.3.0)。
+2. 下载 **VoiceKeep-0.3.0-windows-x64.exe**；Source code ZIP 是开发者源码，不是启动程序。
+3. 将 EXE 放到本机文件夹中，双击运行。首次启动需要稍等片刻，程序会自动打开网页。
+4. 在网页中选择微信数据目录与账号，点击“连接并读取语音”。后面的具体操作见下方“首次连接微信”。
+5. 使用结束后，点击网页顶部“退出工具”，或在小窗口中点击“退出程序”。关闭网页本身不会停止工具。
+
+程序已内置 Python、网页和处理依赖，不需要另外下载依赖源码，不要求打开终端。网页未自动打开时，点击小窗口中的“打开网页”。端口冲突会自动选择其他可用端口，以实际打开的地址为准。
+
+EXE 连接配置和缓存保存在 **`%LOCALAPPDATA%\VoiceKeep`**，导出结果在其中的 `exports` 文件夹；点击小窗口“导出文件夹”即可找到。更新 EXE 会继续使用原来的数据。这里只提供 Windows 64 位试用版，尚未进行 Windows 代码签名。
+
+首次获取密钥仍可能需要按页面提示手动退出并重新登录微信；EXE 简化的是安装和启动步骤，不能省略微信本身要求的交互。
+
+## 开发者：从源码运行
+
+<details>
+<summary>需要修改代码或自行构建时，展开环境安装和命令行步骤</summary>
+
+### 使用前准备
 
 ### 电脑端必需
 
@@ -50,7 +71,7 @@ git --version
 
 电脑数据库里有一条语音消息，也不代表对应音频一定保存在电脑上。能否导出取决于原始媒体是否实际存在。
 
-## 二、下载和安装：只需做一次
+### 下载和安装：只需做一次
 
 ### 1. 下载项目
 
@@ -85,7 +106,7 @@ git -C third_party/wechat-decrypt checkout f0b3f9f95dda2d954ee3dbe1d139fb1944a5e
 
 `checkout` 提示 `detached HEAD` 是固定到指定提交后的正常状态。不要自行换成其最新分支，以免与当前工具不兼容。
 
-## 三、启动网页
+### 启动源码版网页
 
 每次使用时，在项目文件夹打开 PowerShell，运行：
 
@@ -114,7 +135,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 这个设置只对当前 PowerShell 进程生效。
 
-## 四、首次连接微信
+</details>
+
+## 首次连接微信
 
 ### 1. 选择聊天数据目录
 
@@ -165,7 +188,7 @@ D:\xwechat_files\wxid_example\db_storage
 
 工具会保存成功的连接配置，下次启动时直接读取已准备的数据。失败或取消时，之前成功加载的列表会保留；第一次连接失败时仍是空列表。
 
-## 五、先导出一条语音试试
+## 先导出一条语音试试
 
 1. 在左侧搜索并选择一个群聊或联系人。
 2. 先将 **“发送人”** 设为 **“全部发送人”**，清除日期筛选，避免把目标语音过滤掉。
@@ -187,7 +210,7 @@ D:\xwechat_files\wxid_example\db_storage
 - 批量结果默认位于项目的 `exports/` 下，包含 MP3、原始语音和 `manifest.json` 清单。
 - 点击“取消”会停止后续处理，已经完成的批量导出文件会保留。
 
-## 六、可选：在 Android App 中整理语音
+## 可选：在 Android App 中整理语音
 
 **只需要 MP3 时，可以跳过这一节。** 直接把导出的 MP3 传到手机，用普通播放器打开即可。
 
@@ -234,23 +257,23 @@ D:\xwechat_files\wxid_example\db_storage
 
 App 不申请录音、联网或所有文件访问权限。导入后的浏览、筛选和播放不需要电脑持续连接，但增加新的微信语音仍需电脑生成新数据包。
 
-## 七、以后再次使用
+## 以后再次使用
 
 通常只需以下步骤，不需要重复安装依赖：
 
-1. 在项目文件夹运行 `scripts/Start-VoiceLibrary.ps1`，打开本机网页。
+1. EXE 用户双击程序，网页会自动打开。源码用户在项目文件夹运行 `scripts/Start-VoiceLibrary.ps1`。
 2. 电脑微信有新聊天时，点击顶部 **“刷新聊天数据”**，等待成功后继续筛选和导出。
 3. 需要更换账号或目录时，进入顶部 **“数据源设置”**。
 4. 需要更新手机内容时，重新生成数据包、传到手机并导入。
 
 如果修改了网页服务端代码或重新启动过服务，请刷新浏览器页面再操作。
 
-## 八、常见问题
+## 常见问题
 
 | 遇到的问题 | 处理方式 |
 | --- | --- |
-| 网页打不开 | 确认启动终端仍在运行、没有报错，地址为 `http://127.0.0.1:8766/`；不要在手机上打开这个地址 |
-| 8766 端口被占用 | 先停止重复启动的本工具终端；也可运行 `& '.\scripts\Start-VoiceLibrary.ps1' -Port 8767`，然后打开 `http://127.0.0.1:8767/` |
+| 网页打不开 | EXE 用户点击小窗口“打开网页”，以窗口显示的地址为准；源码用户确认启动终端仍在运行且没有报错。不要在手机上打开这个本机地址 |
+| 8766 端口被占用 | EXE 会自动换端口；源码用户先停止重复启动的终端，也可运行 `& '.\scripts\Start-VoiceLibrary.ps1' -Port 8767`，然后打开 `http://127.0.0.1:8767/` |
 | 找不到账号 / 检查目录失败 | 在微信设置核对实际聊天数据位置，选择 `xwechat_files`、账号目录或 `db_storage`；不要选安装目录或 `Backup`，并确认不是旧版数据格式 |
 | 一直等待微信退出 | 通过右下角微信托盘菜单退出，关闭聊天窗口不等于退出进程 |
 | 密钥获取超时或失败 | 等待本次任务结束或取消，确认所选账号和微信版本，再点击连接并按页面提示重登；不要将密钥粘贴到网页 |
@@ -263,7 +286,9 @@ App 不申请录音、联网或所有文件访问权限。导入后的浏览、�
 
 如果需要报告问题，请提供操作步骤、Windows / 微信版本和页面报错文字，去掉个人账号、路径及聊天内容，不要附上真实密钥或数据库。
 
-## 九、本机文件保存在哪里
+## 本机文件保存在哪里
+
+EXE 用户的下列数据路径位于 `%LOCALAPPDATA%\VoiceKeep`；源码用户位于项目目录。`build/` 下的 APK 与签名只在源码构建时生成。
 
 | 位置 | 内容 |
 | --- | --- |
@@ -281,13 +306,25 @@ App 不申请录音、联网或所有文件访问权限。导入后的浏览、�
 普通用户无需运行测试。需要检查开发环境时，可以执行：
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -m pytest -q tests/test_original_voices.py tests/test_voice_library.py tests/test_mobile_package.py tests/test_desktop_connection.py
+& '.\.venv\Scripts\python.exe' -m pytest -q tests/test_original_voices.py tests/test_voice_library.py tests/test_mobile_package.py tests/test_desktop_connection.py tests/test_desktop_app.py
 ```
 
-当前 43 项 Python 回归通过，使用合成数据，不附带私人聊天样本；Android 原始音频导入、播放和保存链路已在真机验证。首次密钥获取的网页编排另有合成测试，不能据此保证所有微信版本均兼容。
+当前 51 项 Python 回归通过，使用合成数据，不附带私人聊天样本；Android 原始音频导入、播放和保存链路已在真机验证。首次密钥获取的网页编排另有合成测试，不能据此保证所有微信版本均兼容。
 
 - [连接流程说明](docs/connection.md)
 - [Android 测试说明](docs/testing.md)
 - [第三方来源与许可证](THIRD_PARTY.md)
 
 源码入口：`scripts/` 为本地处理与 Web 服务，`web/` 为网页，`android-library/` 为手机 App，`tests/` 为合成回归。
+
+
+### 开发者自行构建 EXE
+
+完成上方源码安装和固定版本依赖下载后：
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m pip install -r requirements-build.txt
+& '.\scripts\Build-DesktopExe.ps1'
+```
+
+产物为 `build/desktop-dist/VoiceKeep.exe`。打包文件清单采用白名单，不包含开发者的微信数据、密钥或导出文件。具体结构与验证方法见 [Windows EXE 说明](docs/windows-exe.md)。

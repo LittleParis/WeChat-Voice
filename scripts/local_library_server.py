@@ -29,10 +29,12 @@ class LibraryServer(ThreadingHTTPServer):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
 
-    def __init__(self, address, library, webroot, exportroot, project=None, settings=None):
+    def __init__(self, address, library, webroot, exportroot, project=None, settings=None, on_exit=None):
         self.library, self.webroot = library, Path(webroot).resolve()
         self.exportroot = Path(exportroot).resolve()
         self.token = secrets.token_hex(32)
+        self.instance_id = secrets.token_hex(16)
+        self.on_exit = on_exit
         self.jobs, self.jobs_lock = {}, threading.RLock()
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="voice-export")
         self.connection = DesktopConnection(project, self.activate_library, settings) if project else None
@@ -154,8 +156,10 @@ class LibraryHandler(BaseHTTPRequestHandler):
         self.library = self.server.library
         try:
             if path == "/":
-                html = (self.server.webroot / "index.html").read_text(encoding="utf-8").replace("__VOICE_TOKEN__", self.server.token)
+                html = (self.server.webroot / "index.html").read_text(encoding="utf-8").replace("__VOICE_TOKEN__", self.server.token).replace("__DESKTOP_HIDDEN__", "" if self.server.on_exit else "hidden")
                 return self.respond(html, content_type="text/html; charset=utf-8", cookie=True)
+            if path == "/api/health":
+                return self.respond({"app": "voicekeep", "instance": self.server.instance_id})
             assets = {"/app.js": ("app.js", "text/javascript; charset=utf-8"), "/app.css": ("app.css", "text/css; charset=utf-8"),
                       "/connection.js": ("connection.js", "text/javascript; charset=utf-8")}
             if path in assets:
@@ -198,6 +202,10 @@ class LibraryHandler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 raise ValueError("请求内容无效")
             path = urlparse(self.path).path
+            if path == "/api/exit" and self.server.on_exit:
+                self.respond({"ok": True})
+                threading.Thread(target=self.server.on_exit, daemon=True).start()
+                return
             if path.startswith("/api/connection/"):
                 connection = self.server.connection
                 if not connection:

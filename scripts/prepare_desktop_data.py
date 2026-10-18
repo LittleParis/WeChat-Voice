@@ -6,6 +6,7 @@ from pathlib import Path
 import sqlite3
 import sys
 import re
+from runtime_paths import resources
 
 
 def main():
@@ -21,7 +22,7 @@ def main():
     raw = bytes.fromhex(args.key_file.read_text(encoding="ascii").strip())
     if len(raw) != 32:
         parser.error("Invalid key file; expected a verified 32-byte raw key")
-    upstream = Path(__file__).resolve().parents[1] / "third_party/wechat-decrypt/scripts/windows/decrypt_all.py"
+    upstream = resources() / "third_party/wechat-decrypt/scripts/windows/decrypt_all.py"
     spec = importlib.util.spec_from_file_location("reviewed_decrypt", upstream)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

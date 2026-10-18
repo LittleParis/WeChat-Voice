@@ -13,13 +13,23 @@ from pathlib import Path
 import struct
 import sys
 import time
+from runtime_paths import resources, system_dll_search
 
 
 def load_extractor():
-    path = Path(__file__).resolve().parents[1] / "third_party/wechat-decrypt/scripts/windows/extract_raw_key.py"
+    path = resources() / "third_party/wechat-decrypt/scripts/windows/extract_raw_key.py"
     spec = importlib.util.spec_from_file_location("reviewed_extractor", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # Keep upstream's tasklist probes invisible when launched from a windowed EXE.
+    import subprocess
+    from types import SimpleNamespace
+    def quiet_run(*arguments, **options):
+        if os.name == "nt":
+            options.setdefault("creationflags", subprocess.CREATE_NO_WINDOW)
+        with system_dll_search():
+            return subprocess.run(*arguments, **options)
+    module.subprocess = SimpleNamespace(run=quiet_run, TimeoutExpired=subprocess.TimeoutExpired)
     return module
 
 
